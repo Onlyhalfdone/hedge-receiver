@@ -17,6 +17,8 @@ const SUPABASE_URL = 'https://kmohmaosossxqnbqqxpm.supabase.co/rest/v1/';
 const SUPABASE_KEY = 'sb_publishable__xpv-dtlmUmBAJuH0ytmwQ_gTK0SUCV';
 
 // Connect to MQTT
+console.log('Starting receiver');
+console.log('Connecting to MQTT...');
 const client = mqtt.connect(MQTT_HOST, {
   username: MQTT_USER,
   password: MQTT_PASS,
