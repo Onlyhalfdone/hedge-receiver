@@ -32,6 +32,7 @@ const client = mqtt.connect(MQTT_HOST, {
 // --- MQTT events ---
 client.on('connect', () => {
   console.log('Connected to MQTT');
+  console.log('Supabase URL:', SUPABASE_URL);
 
   client.subscribe(TOPIC, (err) => {
     if (err) {
