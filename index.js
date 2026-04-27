@@ -54,7 +54,7 @@ client.on('message', async (topic, message) => {
     const payload = message.toString();
 
     const response = await axios.post(
-      `${SUPABASE_URL}/rest/v1/messages`,
+      `${SUPABASE_URL}/rest/v1/Messages`,
       {
         topic: topic,
         payload: payload
