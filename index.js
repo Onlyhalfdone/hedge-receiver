@@ -1,55 +1,74 @@
 const http = require('http');
+const mqtt = require('mqtt');
+const axios = require('axios');
 
+// --- Tiny web server (needed for Render free tier) ---
 http.createServer((req, res) => {
   res.writeHead(200);
   res.end('OK');
 }).listen(10000);
 
-const mqtt = require('mqtt');
-const axios = require('axios');
+// --- Environment variables ---
+const MQTT_HOST = process.env.MQTT_HOST;
+const MQTT_USER = process.env.MQTT_USER;
+const MQTT_PASS = process.env.MQTT_PASS;
 
-// === YOUR DETAILS ===
-const MQTT_HOST = 'mqtt://c32709b4.ala.eu-central-1.emqxsl.com:8883';
-const MQTT_USER = 'Test1';
-const MQTT_PASS = '4-ci:5qUwDSGUxp';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
 
-const SUPABASE_URL = 'https://kmohmaosossxqnbqqxpm.supabase.co/rest/v1/';
-const SUPABASE_KEY = 'sb_publishable__xpv-dtlmUmBAJuH0ytmwQ_gTK0SUCV';
+const TOPIC = 'hedge/test';
 
-// Connect to MQTT
+// --- Startup logs ---
 console.log('Starting receiver');
 console.log('Connecting to MQTT...');
+
+// --- MQTT connection ---
 const client = mqtt.connect(MQTT_HOST, {
   username: MQTT_USER,
   password: MQTT_PASS,
-  rejectUnauthorized: false
+  reconnectPeriod: 5000
+});
+
+// --- MQTT events ---
+client.on('connect', () => {
+  console.log('Connected to MQTT');
+
+  client.subscribe(TOPIC, (err) => {
+    if (err) {
+      console.error('Subscribe error:', err);
+    } else {
+      console.log(`Subscribed to ${TOPIC}`);
+    }
+  });
 });
 
 client.on('error', (err) => {
-  console.error('MQTT error:', err.message);
+  console.error('MQTT error:', err);
 });
 
 client.on('message', async (topic, message) => {
-  const payload = message.toString();
-  console.log(`Received: ${topic} - ${payload}`);
+  console.log(`Message received on ${topic}: ${message.toString()}`);
 
   try {
-    await axios.post(
-      `${SUPABASE_URL}/rest/v1/messages`,
+    const payload = message.toString();
+
+    const response = await axios.post(
+      `${SUPABASE_URL}/rest/v1/hedge_messages`,
       {
         topic: topic,
         payload: payload
       },
       {
         headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
           'Content-Type': 'application/json'
         }
       }
     );
-    console.log('Saved to database');
+
+    console.log('Saved to Supabase:', response.status);
   } catch (err) {
-    console.error('Error saving:', err.message);
+    console.error('Supabase error:', err.response?.data || err.message);
   }
 });
